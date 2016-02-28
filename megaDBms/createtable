@@ -1,0 +1,136 @@
+#! /usr/bin/ksh .
+#Type Table -n:Name,-f:column_name?datatype?[pk],column_name?datatype,column_name?datatype
+
+if test $# -gt 1
+then
+arg1=$1
+arg2=$2
+
+typeset -i fstArglen=${#arg1}
+typeset -i scndArglen=${#arg2}
+
+opt1=`echo ${arg1:0:3}`
+opt2=`echo ${arg2:0:3}`
+
+tableNameArg=""
+colsArg=""
+
+case $opt1 in 
+-n:) tableNameArg=`echo ${arg1:3:$fstArglen-3}` ;;
+-f:) colsArg=`echo ${arg1:3:$fstArglen-3}` ;;
+esac
+
+case $opt2 in 
+-n:) tableNameArg=`echo ${arg2:3:$scndArglen-3}` ;;
+-f:) colsArg=`echo ${arg2:3:$scndArglen-3}` ;;
+esac
+
+if test ${#colsArg} -le 0 -o ${#tableNameArg} -le 0
+then
+continue
+fi
+isCreated=0
+#check datatype---------------------------------
+typeset -i co=0
+cols=`echo $colsArg |sed 's/,/\n/g'`
+for col in $cols
+do
+mycol[co]=$col
+((co++))
+done
+typeset -i dterrflag=0
+typeset -i ad=0
+typeset -i step=0
+for mc in ${mycol[*]}
+do
+all=`echo  $mc |cut -d? -f2`
+for cuc in $all
+do
+case $cuc in
+"int");;
+"str");;
+*)
+((dterrflag++))
+echo "the data type <"$cuc"> is not valid"
+;;
+esac
+done
+done
+if test $dterrflag -gt 0
+then
+clear
+echo "Error: You typed undefined data type (there are only defined tow types of data (str & int)"
+#exit
+continue
+fi
+#----------------------------------------------
+#check one pK----------------------------------
+ppk=`echo %pk%`
+typeset -i pkx=0
+for mc in ${mycol[*]}
+do
+all=`echo  $mc |cut -d? -f3`
+for cuc in $all
+do
+if [ $cuc=$ppk ]
+then
+((pkx++))
+fi
+done
+done
+if test $pkx -gt 1
+then
+clear
+echo "Error: you select more than column to be Primary Key..."
+#exit 
+continue
+fi
+
+#--------------------------------------
+#Create the Table----------------------
+logPath=$LOGFILE
+newtablepath=$DBPATH"/"$tableNameArg".tbl"
+
+logsize=$(stat -c %s $logPath)
+isTableExisted=`awk -v c="#region table "$tableNameArg 'BEGIN{}{if($0==c){x=1;exit 1}else{x=0;}}END{print x}' $logPath`
+
+if test $logsize -le 0
+then
+echo "#region table "$tableNameArg>>$logPath
+arr=`echo $colsArg |sed 's/,/\n/g'| sed 's/?/:/g'`
+for fields in $arr
+do
+    echo "$fields">>$logPath
+done
+echo "#endregion table "$tableNameArg>>$logPath
+echo "the Table "$tableNameArg" is Created..."
+echo "#include<"$logPath"@table:"$tableNameArg">">>$newtablepath
+echo "#------------------------------------------------">>$newtablepath
+
+fi
+
+if test ${#isTableExisted} -gt 0
+then
+if test $isTableExisted -eq 0 
+then
+echo "#region table "$tableNameArg>>$logPath
+arr=`echo $colsArg |sed 's/,/\n/g'| sed 's/?/:/g'`
+
+for fields in $arr
+do
+echo "$fields">>$logPath
+
+done
+echo "#endregion table "$tableNameArg>>$logPath
+
+echo "#include<"$logPath"@table:"$tableNameArg">">>$newtablepath
+echo "#------------------------------------------------">>$newtablepath
+clear
+echo "the Table "$tableNameArg" is Created..."
+isCreated=1
+else
+echo "the Table "$tableNameArg" is Existed..."
+fi
+fi
+
+fi

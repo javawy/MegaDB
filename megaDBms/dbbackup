@@ -1,0 +1,30 @@
+#! /usr/bin/ksh .
+
+echo "Do you want to buckup " "database"
+select ans in "Yes" "No"
+do
+case $REPLY in
+1)
+while true
+do
+read bklocation?"Type Backup target location: "
+if test $bklocation
+then
+if ! test -d $bklocation
+then
+echo "* Error: Please type correct path..."
+continue
+else
+tar cf $bklocation"/"$DATABASE".tar" $DBPATH
+echo "The backup is done successfuly..."
+break
+fi
+else
+continue
+fi
+done
+;;
+2)
+;;
+esac
+done

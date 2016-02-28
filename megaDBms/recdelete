@@ -1,0 +1,103 @@
+#! /usr/bin/ksh .
+
+clear
+
+PS3="Type the number of your choice: "
+
+#read tname?"* Type the name of the table:"
+. ./megaDBms/tblinker $1 #$tname
+echo "Delete Rocord(s):"
+echo "-----------------"
+
+selcolumn=$pkCol
+echo "* Select the type of column that you want to use:"
+select colmt in "Primary Key" "Another Column"
+do
+case $REPLY in
+1)
+selcolumn=$pkCol;
+break;;
+2)
+echo "* Select the column that you want:"
+select colm in ${colsLst[*]}
+do
+	selval=$REPLY
+	break;
+done
+echo "--------------------------------"
+selcolumn=${colsLst[$selval-1]}
+	break;;
+esac
+
+done
+
+read pkval?"* Type the value of <"$selcolumn"> to get the record(s) you want to delete:"
+
+if ! test $selcolumn = $pkCol
+then
+echo "* Select the position of the value in the data:"
+typeset -i valpos=0
+select pos in "Match all data" "Match a part of data"
+do
+case $REPLY in
+1)
+valpos=0;
+break;;
+2)
+valpos=1;
+break;;
+esac
+done
+else
+valpos=0;
+fi
+
+typeset -i cind=0
+for cl in ${colsLst[*]}
+do
+((cind++))
+if [ $selcolumn = $cl ]
+then
+break;
+fi
+done
+
+echo "--------------------------------"
+if test $valpos -eq 1
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x=x","NR;}}END{print x}' $targetTable| tr ":" "\n"`
+
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x++}}END{print x}' $targetTable| tr ":" "\n"`
+elif test $valpos -eq 0
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x=x","NR;}}END{print x}' $targetTable| tr ":" "\n"`
+
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x++}}END{print x}' $targetTable| tr ":" "\n"`
+fi
+
+if ! test $statistics
+then
+echo "* Error: there are no records to delete."
+else
+fresult=`echo ${result:1:${#result}}`
+clear
+echo "* Warning: you will delete about "$statistics" Record(s)."
+echo "Are you want to continue?"
+select ans in "Yes" "No"
+do
+case $REPLY in
+1)
+awk -v coln=$fresult -v value=$pkval '{if(!index(coln,NR)){print $0}}' $targetTable > $targetTable"tmp"
+cat $targetTable"tmp" >$targetTable
+rm $targetTable"tmp"
+echo "* Table <"$tname"> was been updated..."
+break
+;;
+2)
+break
+;;
+esac
+done
+fi
+
+

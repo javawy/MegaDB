@@ -1,0 +1,115 @@
+#! /usr/bin/ksh .
+
+clear
+
+PS3="Type the number of your choice: "
+#read tname?"* Type the name of the table:"
+. ./megaDBms/tblinker $1 #$tname
+echo "Update Table:"
+echo "-------------"
+
+selcolumn=$pkCol
+col2update=""
+echo "* Select the type of column that you want to use:"
+select colmt in "Primary Key" "Another Column"
+do
+case $REPLY in
+1)
+selcolumn=$pkCol;
+break;;
+2)
+echo "* Select the column that you want to use:"
+select colm in ${colsLst[*]}
+do
+	selval=$REPLY
+	break;
+done
+echo "--------------------------------"
+selcolumn=${colsLst[$selval-1]}
+	break;;
+esac
+done
+
+echo "* Select the column that is a domain of the value that you want to change:"
+select colm in ${colsLst[*]}
+do
+	chlval=$REPLY
+        col2update=${colsLst[$chlval-1]}
+	break;
+done
+
+read pkval?"* Type the value of <"$selcolumn"> to select the record(s) that you want to update:"
+
+if ! test $selcolumn = $pkCol
+then
+echo "* Select the position of the value in the data:"
+typeset -i valpos=0
+
+select pos in "Match all data" "Match a part of data"
+do
+case $REPLY in
+1)
+valpos=0;
+break;;
+2)
+valpos=1;
+break;;
+esac
+done
+else
+valpos=0;
+fi
+
+read newval?"* Type the new value of <"$col2update"> that you want to update with:"
+newval=`echo $newval | tr " " '~'`
+
+typeset -i cind=0
+for cl in ${colsLst[*]}
+do
+((cind++))
+if [ $selcolumn = $cl ]
+then
+break;
+fi
+done
+
+typeset -i ucid=0
+for cl in ${colsLst[*]}
+do
+((ucid++))
+if [ $col2update = $cl ]
+then
+break;
+fi
+done
+echo "--------------------------------"
+
+if test $valpos -eq 1
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x=x","NR;}}END{print x}' $targetTable| tr ":" "\n"`
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x++}}END{print x}' $targetTable| tr ":" "\n"`
+elif test $valpos -eq 0
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x=x","NR;}}END{print x}' $targetTable| tr ":" "\n"`
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x++}}END{print x}' $targetTable| tr ":" "\n"`
+fi
+
+if ! test $statistics
+then
+clear
+echo "----------------------------------------"
+echo "Warning: there are no records to update."
+echo "----------------------------------------"
+else
+fresult=`echo ${result:1:${#result}}`
+awk -F: -v coln=$fresult -v value=$pkval -v newv=$newval -v chngcol=$ucid '{if(index(coln,NR)){sub("~"," ",newv);gsub($chngcol,newv)}; print $0}' $targetTable > $targetTable"tmp"
+cat $targetTable"tmp" >$targetTable
+rm $targetTable"tmp"
+clear
+echo "------------------------------------------"
+echo "* Table <"$tableName"> was been updated..."
+echo "------------------------------------------"
+
+fi
+
+

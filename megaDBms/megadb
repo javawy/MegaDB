@@ -1,0 +1,111 @@
+#! /usr/bin/ksh 
+#---------------------------------------
+# Copyright to Mohammed Megahed Hussein
+# mohammad.megahed@gmail.com
+#---------------------------------------
+
+clear
+confFile="~/.megadb/megadbs.config"
+
+if ! test -d ~/.megadb
+then
+mkdir ~/.megadb
+fi 
+
+if ! test -f ~/.megadb/megadbs.config
+then
+touch ~/.megadb/megadbs.config
+fi 
+
+PS3="Type your number of choice: "
+while true
+do
+clear
+echo "* Welcome to MEGADBMS for Database Systems"
+echo "------------------------------------------"
+echo "* What do you want to do?"
+select colmt in 'Create database' 'Connect to database';
+do
+if ! $REPLY
+then
+break
+fi
+clear
+case $REPLY in
+1)
+echo "Creating a new Database"
+echo "-----------------------"
+. ./createdb
+clear
+;;
+2)
+clear
+echo "Loging..."
+echo "---------"
+. ./dbauth
+
+if test $TRUSTED -eq 1
+then
+DATABASE=$dbname
+DBPATH=$dbpath"/"$dbname
+LOGFILE=$dbpath"/"$dbname"/"$dbname".log"
+clear
+select mych in "Create new table" "Manipulate existed table" "Database Mintainance" "Back" 
+do
+case $REPLY in
+1)
+while true
+do
+clear
+echo "Creating a new Table:"
+echo "-----------------------"
+echo "Please type a sentence in tha format of e.x.(-n:Name -f:column_name1?datatype?[%pk%],column_name2?datatype,column_name3?datatype) to generate a new table"
+echo "---------------------------------------------"
+read args?"Type the sentence: "
+. ./createtable $args
+
+break
+done
+;;
+2)
+read tableName?"Please type table name :"
+targetTable=$DBPATH'/'$tableName'.tbl'
+
+if ! test -f $targetTable
+then
+echo "Not existed Table...!"
+continue
+else
+clear
+echo "Manipulating table <"$tableName">"
+. ./tbmanibulate $tableName
+fi
+;;
+3)
+clear
+echo "Database Maintinance"
+. ./dbmaintinance
+;;
+4)
+break 
+;;
+*)
+clear
+continue
+;;
+esac
+done
+fi
+;;
+*)
+clear
+continue
+;;
+esac
+if ! test $REPLY
+then
+break
+fi
+done
+done
+

@@ -1,0 +1,14 @@
+#! /usr/bin/ksh .
+
+select mancho in "Delete table" "Backup Database"
+do
+case $REPLY in
+1)
+read tbname?"Type the name of the table to delete: "
+. ./megaDBms/tbdelete $tbname
+;;
+2)
+. ./megaDBms/dbbackup
+;;
+esac
+done

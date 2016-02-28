@@ -1,0 +1,23 @@
+#! /usr/bin/ksh .
+
+select mancho in "Insert record" "Query builder" "Update record(s)" "Delete rcord(s)"
+do
+case $REPLY in
+1)
+. ./megaDBms/tbinsert $*
+;;
+2)
+. ./megaDBms/tbretrive $*
+;;
+3)
+. ./megaDBms/tbupdate $*
+;;
+4)
+. ./megaDBms/recdelete $*
+;;
+*)
+
+;;
+esac
+done
+

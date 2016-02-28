@@ -1,0 +1,63 @@
+#! /usr/bin/ksh .
+. ./megaDBms/tblinker $1
+typeset -i count=0;
+clear
+echo '* Insert values in table <'$tableName'> *'
+echo '-------------------------------------'
+echo "* Please type the value of columns"
+mval=""
+values=""
+while test $count -lt $colNums
+do
+
+while true
+do
+read cval?"<"${colsLst[$count]}">:"
+
+if [ "${colsLst[$count]}" == "$pkCol" ]
+then
+ccol=${colsLst[$count]}
+. ./megaDBms/tbvalidator $1 $ccol $cval
+if test $value_is_found -eq 1
+then
+echo "*Warning: The value that you typed will be dublicated..."
+continue
+fi
+else
+break
+fi
+
+
+if [ "${dtLst[$count]}" == "int" ]
+then
+case $cval in
++([1-9]) ) break
+;;
+$NULL)
+if [ "${colsLst[$count]}" == "$pkCol" ]
+then
+echo "*Error: <"${colsLst[$count]}"> column is a primary key  must take a value..."
+else
+break
+fi
+;;
+*)
+echo "*Error: The value that you typed not mismatch the <Integer> data type..."
+;;
+esac
+else
+break
+fi
+
+
+done
+
+values=$values':'$cval
+((count++))
+done
+
+typeset -i reclen=${#values}
+mval=`echo ${values:1:$reclen-1}`
+
+echo $mval>>$targetTable
+echo '-------------------------------------'

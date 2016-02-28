@@ -1,0 +1,80 @@
+#! /usr/bin/ksh .
+
+tableName=$1
+targetTable=$DBPATH'/'$tableName'.tbl'
+
+if ! test -f $targetTable
+then
+echo "Not existed Table...!"
+exit 1
+fi
+typeset -fx function anliesRef
+{
+ref=`line<$targetTable`
+hd="#include<"
+typeset -i rlen
+rlen=${#ref}
+typeset -i x
+((x=$rlen-10))
+str1=`echo ${ref:${#hd}:x}`
+str2=`echo $str1 | tr "@" "\n"`
+typeset -i ii
+for mm in $str2
+do
+arr[ii]=$mm
+((ii++))
+done
+}
+
+if test $# -gt 0
+then
+tname=`echo ${arr[1]}|tr ":" " "`
+tblSchema=`sed -n "/${tname}/,/${tname}/p" ${arr[0]}`
+typeset -i a
+for nam in $tname
+do
+puname[a]=$nam
+((a++))
+done
+
+typeset -i num=0
+for col in $tblSchema
+do
+case $col in
+"#region") ;;
+"table") ;;
+"#endregion") ;;
+${puname[1]});;
+
+*)
+cols[num]=$col
+((num++))
+;;
+esac
+done
+
+colNums=$num
+num=0
+tableName=${puname[1]};
+
+typeset -i coind=0
+pkk=.pk
+for mcols in ${cols[*]}
+do
+colsLst[$coind]=`echo $mcols | cut -d: -f1`
+dtLst[$coind]=`echo $mcols | cut -d: -f2`
+((coind++))
+done
+
+
+for mcols in ${cols[*]}
+do
+pkCol=`echo $mcols |awk -F: '{if($3=="%pk%"){print $1;exit 1}}'`
+if test $pkCol
+then
+break
+fi
+done
+
+fi
+

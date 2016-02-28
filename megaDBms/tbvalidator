@@ -1,0 +1,37 @@
+#! /usr/bin/ksh .
+
+#$1 table
+#$2 column
+#$3 value
+
+if [ "$pkCol" == "$2" ]
+then
+typeset -i count=0;
+cval=$3
+
+typeset -i cind=0
+for cl in ${colsLst[*]}
+do
+((cind++))
+if [ $cl = $2 ]
+then
+colind=$cind
+break
+else
+continue
+fi
+done
+colvals=`echo a| sed '1,2d' $targetTable | cut -d: -f$colind`
+typeset -i value_is_found=0
+
+for clv in ${colvals[*]}
+do
+if [ $3 = $clv  ]
+then
+((value_is_found=1))
+break
+else
+((value_is_found=0))
+fi
+done
+fi

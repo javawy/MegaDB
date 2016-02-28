@@ -1,0 +1,37 @@
+#! /usr/bin/ksh .
+
+typeset -i xx=0
+while test $xx -lt 3
+do
+read username?"Type your login name: "
+read paswd?"Type your password: "
+
+logvalid=`awk -F: -v un=$username -v pswd=$paswd '{if($3==un && $4==pswd){x=1; exit}else{x=0;}}END{print x}' ~/.megadb/megadbs.config`
+
+dbname=`awk -F: -v un=$username -v psw=$paswd '{if($3==un && $4==psw){x=$1;print x; exit}else{x="";}}END{}' ~/.megadb/megadbs.config`
+
+dbpath=`awk -F: -v un=$username -v psw=$paswd '{if($3==un && $4==psw){x=$2;print x; exit}else{x="";}}END{}' ~/.megadb/megadbs.config`
+
+if test $logvalid -eq 1
+then
+clear
+echo "Welcome "$username
+echo "------------------"
+echo "What do you want to do?"
+TRUSTED=1
+break
+else
+TRUSTED=0
+((count=3-$xx))
+((xx++))
+if test $xx -ge 3
+then
+clear
+echo "Loging Failed..!"
+break
+fi
+echo "Invalid user name or password! (you have "$count" tries for loging)"
+continue
+fi
+
+done

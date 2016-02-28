@@ -1,0 +1,47 @@
+#! /usr/bin/ksh .
+
+fsize=$(stat -c %s ~/.megadb/megadbs.config)
+
+while true
+do
+typeset -i dbvalid=0
+read dbname?"Type Database Name: "
+dbvalid=`awk -F: -v db=$dbname '{if($1==db){x=1; exit}else{x=0;}}END{print x}' ~/.megadb/megadbs.config`
+
+if test $dbname 
+then
+if test $dbvalid -lt 1
+then
+break
+else
+echo "* Warning Database was existed..."
+continue
+fi
+else
+continue
+fi
+done
+while true
+do
+read dblocation?"Type Database target location: "
+if test $dblocation
+then
+if ! test -d $dblocation
+then
+echo "* Error: Please type correct path..."
+continue
+else
+break
+fi
+else
+continue
+fi
+done
+read dbuser?"Type user name of "$dbname" database: "
+read dbpasswd?"Type a password of "$dbname" database: "
+
+newdb=$dbname":"$dblocation":"$dbuser":"$dbpasswd
+echo $newdb >> ~/.megadb/megadbs.config
+mkdir $dblocation"/"$dbname
+touch $dblocation"/"$dbname"/"$dbname".log"
+echo "Database <"$dbname"> created successfuly"

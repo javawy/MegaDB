@@ -1,0 +1,106 @@
+#! /usr/bin/ksh .
+clear
+PS3="Type the number of your choice: "
+#read tname?"* Type the name of the table that you want to retrive data from:"
+. ./megaDBms/tblinker $1 #$tname
+
+choicesnum=""
+typeset -i chonum=0
+echo "Query Builder:"
+echo "--------------"
+
+selcolumn=$pkCol
+echo "* Select the type of column that you want to use:"
+select colmt in "Primary Key" "Another Column"
+do
+case $REPLY in
+1)
+selcolumn=$pkCol;
+break;;
+2)
+echo "* Select the column that you want to use:"
+select colm in ${colsLst[*]}
+do
+	selval=$REPLY
+	break;
+done
+echo "--------------------------------"
+selcolumn=${colsLst[$selval-1]}
+	break;;
+esac
+
+done
+
+read pkval?"* Type the value of <"$selcolumn"> to retrive the record you want:"
+
+if ! test $selcolumn = $pkCol
+then
+echo "* Select the position of the value in the data:"
+typeset -i valpos=0
+select pos in "Match all data" "Match a part of data"
+do
+case $REPLY in
+1)
+valpos=0;
+break;;
+2)
+valpos=1;
+break;;
+esac
+done
+else
+valpos=0;
+fi
+
+typeset -i cind=0
+for cl in ${colsLst[*]}
+do
+((cind++))
+if [ $selcolumn = $cl ]
+then
+break;
+fi
+done
+
+clear
+
+echo "Result:"
+echo "--------------------------------"
+
+if test $valpos -eq 1
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x=$0;print x}}END{}' $targetTable| tr ":" "\n"`
+
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if(index($coln,value)){x++}}END{print x}' $targetTable| tr ":" "\n"`
+elif test $valpos -eq 0
+then
+result=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x=$0;print x}}END{}' $targetTable| tr ":" "\n"`
+
+statistics=`awk -F: -v coln=$cind -v value=$pkval '{if($coln==value){x++}}END{print x}' $targetTable| tr ":" "\n"`
+
+fi
+
+if ! test $statistics
+then
+echo "* There are no data matches your value you typed."
+else
+((cind=0))
+typeset -i loc=0
+typeset -i coun=1
+echo "----<record $coun>----"
+for cl in ${result[*]}
+do
+if test $loc -le ${#result[*]} -a $cind -eq $colNums
+then
+((cind=0))
+((coun++))
+echo "----<record $coun>----"
+fi 
+sv=`echo $cl | tr "~" " "`
+resrec=${colsLst[$cind]}":"$sv
+echo $resrec
+((cind++))
+((le++))
+done
+echo "--------------------------------"
+fi

@@ -1,0 +1,90 @@
+#! /usr/bin/ksh .
+
+#$1 table
+#$2 criteria
+
+if test $# -gt 1
+then
+arg1=$1
+arg2=$2
+
+typeset -i fstArglen=${#arg1}
+typeset -i scndArglen=${#arg2}
+
+opt1=`echo ${arg1:0:3}`
+opt2=`echo ${arg2:0:3}`
+
+tableNameArg=""
+crit=""
+
+case $opt1 in 
+-n:) tableNameArg=`echo ${arg1:3:$fstArglen-3}` ;;
+-c:) crit=`echo ${arg1:3:$fstArglen-3}` ;;
+esac
+
+case $opt2 in 
+-n:) tableNameArg=`echo ${arg2:3:$scndArglen-3}` ;;
+-c:) crit=`echo ${arg2:3:$scndArglen-3}` ;;
+esac
+
+. ./megaDBms/tblinker $tableNameArg
+newcrit=$crit
+typeset -i cind=0
+for cl in ${colsLst[*]}
+do
+((cind++))
+
+colid[$cind]=$cl"$"$cind
+
+done
+
+newcrit=`echo $newcrit | tr "&|" "\n"`
+
+#echo ${newcrit[*]}
+for cr in ${newcrit[*]}
+do
+typeset -i cnamlen
+cnamlen=`echo $cr |awk -v cc=$cr '{print index(cc,"]")}'`
+cnam=$cnam" "`echo ${cr:1:cnamlen-2}`
+done
+
+typeset -i vcol=0
+#echo $cnam
+for cl in ${cnam[*]}
+do
+for clid in ${colid[*]}
+do
+cid=`echo $clid | cut -d$ -f2`
+cn=`echo $clid | cut -d$ -f1`
+if [ $cl = $cn ]
+then
+cnum=$cnum" $"$cid
+((vcol++))
+break
+fi
+done
+done
+
+typeset -i xl=0
+for cvcol in ${newcrit[*]} 
+do
+conval[$xl]="=="`echo $cvcol | cut -d= -f2`" "
+((xl++))
+done
+
+((xl=0))
+for conum in ${cnum[*]} 
+do
+finx[$xl]=$conum${conval[$xl]}
+((xl++))
+done
+echo ${finx[*]}
+
+res=`awk -F: -v coo=${finx[*]} '{if(coo)print $1}' $targetTable| sed '1,2d'`
+
+res=`sed '1,2d' $targetTable |cut -d: -f3`
+
+
+echo $res
+fi
+
